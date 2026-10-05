@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>КҮЗГІ ЖАПЫРАҚТАРДЫ ЖИНАЙЫҚ - Математика 1-сынып</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --sprite-url: url('Осенний набор для математической игры (1).png');
+            --primary-orange: #f97316;
+            --primary-yellow: #eab308;
+            --text-brown: #5c3a21;
+            --bg-overlay: rgba(255, 255, 255, 0.85);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Nunito', sans-serif;
+            background-color: #fef3c7;
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        #game-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            /* Main background extracted from the top left of the sprite */
+            background-image: var(--sprite-url);
+            background-size: 250% auto; /* Adjust to fit the top-left landscape scene */
+            background-position: 0% 0%;
+            background-repeat: no-repeat;
+        }
+
+        /* Screen Management */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .screen.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: scale(1);
+        }
+        .screen.hidden {
+            transform: scale(0.9);
+        }
+
+        /* Sprite Extraction Classes using background-position */
+        /* Adjusted coordinates based on visual feedback */
+        .sprite {
+            background-image: var(--sprite-url);
+            background-repeat: no-repeat;
+            display: inline-block;
+        }
+
+        /* Characters - Fine-tuning the crop */
+        .char-boy { 
+            width: 140px; 
+            height: 190px; 
+            background-size: 850% auto; 
+            background-position: 46.5% 3%; 
+        }
+        .char-girl { 
+            width: 130px; 
+            height: 180px; 
+            background-size: 850% auto; 
+            background-position: 63% 3%; 
+        }
+        .char-squirrel { 
+            width: 110px; 
+            height: 120px; 
+            background-size: 900% auto; 
+            background-position: 78% 2%; 
+        }
+
+        /* Boards & Panels */
+        .board-large { 
+            width: 90%; 
+            max-width: 600px; 
+            height: 250px; 
+            background-size: 300% auto; 
+            background-position: 10% 30%; /* Estimate for wooden board */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3));
+        }
+        .board-small {
+            width: 300px; height: 120px;
+            background-size: 400% auto; background-position: 30% 30%;
+        }
+
+        /* Task Container - stylized panel */
+        .task-panel {
+            background-size: 400% auto;
+            background-position: 15% 50%; /* Using one of the colored panels */
+            padding: 30px;
+            border-radius: 20px;
+            min-width: 320px;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            position: relative;
+            z-index: 20;
+        }
+
+        /* Buttons & Interactions */
+        .btn {
+            cursor: pointer;
+            transition: transform 0.1s ease, filter 0.2s ease;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: var(--text-brown);
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.8);
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+        .btn:hover {
+            filter: brightness(1.1);
+        }
+
+        /* Number Buttons from sprite */
+        .btn-number {
+            width: 80px;
+            height: 80px;
+            background-size: 1000% auto;
+            background-position: 70% 35%; /* Default round wooden button approx position */
+            font-size: 2.5rem;
+            margin: 10px;
+            /* Fallback styling if sprite isn't perfectly aligned */
+            background-color: #d97706;
+            border: 4px solid #78350f;
+            border-radius: 50%;
+            color: white;
+            text-shadow: 2px 2px 0 #451a03;
+            box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2), 0 5px 10px rgba(0,0,0,0.3);
+            background-image: none; /* override sprite for crisp text rendering */
+        }
+        .btn-number.correct { background-color: #22c55e; border-color: #14532d; }
+        .btn-number.wrong { background-color: #ef4444; border-color: #7f1d1d; }
+        
+        .options-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        /* Action Buttons */
+        .btn-action {
+            background: linear-gradient(to bottom, #fbbf24, #d97706);
+            border: 4px solid #78350f;
+            border-radius: 30px;
+            padding: 15px 40px;
+            font-size: 1.8rem;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2), 0 8px 15px rgba(0,0,0,0.3);
+            text-shadow: 2px 2px 0 #78350f;
+        }
+
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            z-index: 50;
+            pointer-events: none;
+        }
+        .hud-item {
+            background: rgba(255, 255, 255, 0.9);
+            border: 3px solid #b45309;
+            border-radius: 20px;
+            padding: 10px 20px;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-brown);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            pointer-events: auto;
+        }
+        .hearts { display: flex; gap: 5px; }
+        .heart { 
+            width: 30px; height: 30px; 
+            /* Heart from sprite fallback */
+            background: red;
+            clip-path: polygon(50% 90%, 10% 50%, 10% 20%, 30% 0, 50% 20%, 70% 0, 90% 20%, 90% 50%);
+        }
+        .heart.empty { background: #ccc; }
+        .hud-left, .hud-right { display: flex; flex-direction: column; gap: 10px; }
+
+        @keyframes fall {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+        }
+        @keyframes flyToBasket {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0.2); opacity: 0; }
+        }
+
+        .anim-float { animation: float 3s ease-in-out infinite; }
+        .anim-bounce { animation: bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .anim-shake { animation: shake 0.4s; }
+
+        /* Background Overlay for better readability */
+        .screen-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 5;
+        }
+        .start-screen .screen-overlay, .final-screen .screen-overlay {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        /* Typography */
+        h1 { font-size: 3rem; color: #78350f; text-shadow: 2px 2px 0px white; margin-bottom: 10px; text-align: center; line-height: 1.2; }
+        h2 { font-size: 2rem; color: #92400e; margin-bottom: 20px; text-align: center; }
+        .task-text { font-size: 4rem; font-weight: 900; color: #451a03; text-shadow: 2px 2px 0px white; text-align: center; margin: 20px 0; letter-spacing: 2px;}
+        .instruction { font-size: 1.8rem; color: #78350f; font-weight: 800; text-align: center; }
+
+        /* Elements representation */
+        .leaf-icon { font-size: 1.8em; line-height: 1; }
+        .star-icon { font-size: 1.8em; line-height: 1; color: #fbbf24; text-shadow: 0 0 5px rgba(255,255,255,0.8); }
+
+        /* Confetti Canvas */
+        #confetti { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
+
+        /* Sound Toggle */
+        #sound-toggle {
+            position: absolute; bottom: 20px; right: 20px;
+            width: 50px; height: 50px; border-radius: 50%;
+            background: rgba(255,255,255,0.9); border: 3px solid #b45309;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.5rem; cursor: pointer; z-index: 110; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        /* Visual representations for counting tasks */
+        .visual-container { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 20px 0; min-height: 60px; }
+        .visual-item { font-size: 3rem; animation: bounceIn 0.3s; }
+        .visual-basket { width: 100px; height: 80px; background: #8b5a2b; border-radius: 10px 10px 40px 40px; position: relative; border: 4px solid #5c3a21; overflow: hidden; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px; box-shadow: inset 0 -10px 20px rgba(0,0,0,0.5); }
+        .basket-leaf { font-size: 2rem; position: absolute; }
+
+        /* Feedback Popup */
+        #feedback-popup {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
+            background: white; border: 6px solid; border-radius: 30px;
+            padding: 30px 60px; font-size: 3rem; font-weight: 900;
+            z-index: 200; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+        }
+        #feedback-popup.show { transform: translate(-50%, -50%) scale(1); }
+        #feedback-popup.correct { border-color: #22c55e; color: #15803d; }
+        #feedback-popup.wrong { border-color: #ef4444; color: #b91c1c; }
+
+        /* Level Banner */
+        #level-banner {
+            position: absolute; top: 30%; left: -100%; width: 100%;
+            background: rgba(245, 158, 11, 0.95); border-top: 8px solid #d97706; border-bottom: 8px solid #d97706;
+            padding: 40px 0; text-align: center; z-index: 150;
+            transition: left 0.5s ease-in-out; display: flex; flex-direction: column; align-items: center;
+        }
+        #level-banner.show { left: 0; }
+        #level-banner h2 { font-size: 4rem; color: white; text-shadow: 2px 4px 0 #92400e; margin: 0; }
+        #level-banner p { font-size: 2rem; color: #78350f; font-weight: bold; margin-top: 10px; }
+
+        /* Particles container for flying leaves */
+        #particles { position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index: 60;}
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            h1 { font-size: 2.2rem; }
+            .task-text { font-size: 3rem; }
+            .btn-number { width: 70px; height: 70px; font-size: 2rem; }
+            .hud-item { font-size: 1.2rem; padding: 5px 10px; }
+            .heart { width: 20px; height: 20px; }
+            .board-large { height: auto; padding: 30px 15px; }
+            #hud { padding: 10px; }
+            .visual-item { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="confetti"></canvas>
+    <div id="particles"></div>
+    <div id="sound-toggle" onclick="toggleSound()">🔊</div>
+
+    <div id="hud" style="display: none;">
+        <div class="hud-left">
+            <div class="hud-item">
+                <span class="leaf-icon">🍂</span> <span id="leaf-count">0</span>
+            </div>
+            <div class="hud-item">
+                <span class="star-icon">⭐</span> <span id="score-count">0</span>
+            </div>
+        </div>
+        <div class="hud-right">
+            <div class="hud-item hearts" id="hearts-container">
+                <div class="heart"></div>
+                <div class="heart"></div>
+                <div class="heart"></div>
+            </div>
+            <div class="hud-item">
+                📍 <span id="task-progress">1/10</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-start" class="screen start-screen active">
+        <div class="screen-overlay"></div>
+        <div class="z-10 flex flex-col items-center">
+            <div class="anim-float flex gap-4 mb-4">
+                <div class="sprite char-boy"></div>
+                <div class="sprite char-girl"></div>
+            </div>
+            <div class="bg-amber-100 border-8 border-amber-600 rounded-3xl p-8 max-w-2xl text-center shadow-2xl relative mb-8">
+                <!-- Decorative leaves -->
+                <span class="absolute -top-6 -left-6 text-5xl transform -rotate-12">🍂</span>
+                <span class="absolute -bottom-6 -right-6 text-5xl transform rotate-12">🍁</span>
+                
+                <h1>КҮЗГІ ЖАПЫРАҚТАРДЫ ЖИНАЙЫҚ</h1>
+                <h2>10 көлеміндегі сандарды қосу және азайту</h2>
+                <div class="text-xl text-amber-900 font-bold bg-amber-200 inline-block px-4 py-2 rounded-full mt-2">
+                    Ең жоғары ұпай: <span id="high-score">0</span>
+                </div>
+            </div>
+            <button class="btn btn-action anim-bounce" onclick="startGame()">▶ Ойынды Бастау</button>
+        </div>
+    </div>
+
+    <div id="screen-game" class="screen hidden">
+        <!-- The background is handled by #game-container -->
+        <div class="z-10 flex flex-col items-center justify-center w-full h-full pt-16">
+            
+            <div class="bg-amber-50 border-4 border-amber-500 rounded-3xl p-6 shadow-xl flex flex-col items-center min-w-[300px] md:min-w-[500px]">
+                <div id="instruction" class="instruction">Дұрыс жауабын таңда!</div>
+                
+                <!-- Dynamic Content Area -->
+                <div id="task-content" class="w-full flex flex-col items-center">
+                    <div id="question" class="task-text"></div>
+                    <div id="visual-area" class="visual-container"></div>
+                </div>
+
+                <div id="options" class="options-grid">
+                    <!-- Options injected here -->
+                </div>
+            </div>
+
+            <!-- Character cheering -->
+            <div id="game-character" class="sprite char-squirrel absolute bottom-5 left-5 anim-float opacity-80 scale-75 md:scale-100"></div>
+        </div>
+    </div>
+
+    <div id="feedback-popup">
+        <div id="feedback-icon" class="text-6xl mb-2"></div>
+        <div id="feedback-text"></div>
+    </div>
+
+    <div id="level-banner">
+        <h2 id="level-title">1-деңгей: Күзгі бақ</h2>
+        <p id="level-desc">Қосу және санау</p>
+    </div>
+
+    <div id="screen-gameover" class="screen hidden">
+        <div class="screen-overlay" style="background: rgba(0,0,0,0.7);"></div>
+        <div class="z-10 bg-white border-8 border-red-500 rounded-3xl p-10 text-center flex flex-col items-center max-w-md">
+            <span class="text-7xl mb-4">💔</span>
+            <h1 style="color: #ef4444;">ОЙЫН АЯҚТАЛДЫ</h1>
+            <p class="text-2xl text-gray-700 font-bold mb-8">Барлық өмірлеріңіз таусылды. Қайта байқап көріңіз!</p>
+            <button class="btn btn-action" onclick="resetToStart()">🔄 Бас мәзірге</button>
+        </div>
+    </div>
+
+    <div id="screen-final" class="screen final-screen hidden">
+        <div class="screen-overlay"></div>
+        <div class="z-10 bg-yellow-50 border-8 border-yellow-500 rounded-3xl p-10 text-center flex flex-col items-center max-w-2xl shadow-2xl relative">
+            <div class="absolute -top-16 text-8xl anim-bounce">🏆</div>
+            <h1 class="mt-8 text-yellow-600">ЖАРАЙСЫҢДАР!</h1>
+            <h2 class="text-yellow-800">Сендер барлық жапырақты жинадыңдар! «Күзгі математик» мәртебесін алдыңдар!</h2>
+            
+            <div class="flex gap-10 my-8">
+                <div class="flex flex-col items-center">
+                    <span class="text-5xl mb-2">⭐</span>
+                    <span class="text-3xl font-bold text-yellow-700" id="final-score">0</span>
+                    <span class="text-xl font-bold text-yellow-900">Ұпай</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <span class="text-5xl mb-2">🍂</span>
+                    <span class="text-3xl font-bold text-orange-600" id="final-leaves">0</span>
+                    <span class="text-xl font-bold text-orange-800">Жапырақ</span>
+                </div>
+            </div>
+            
+            <div class="flex gap-4">
+                <div class="sprite char-boy transform scale-75"></div>
+                <div class="sprite char-girl transform scale-75"></div>
+            </div>
+
+            <button class="btn btn-action mt-6" onclick="resetToStart()">🔄 Қайта Ойнау</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- Audio System (Web Audio API) ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+    let soundEnabled = true;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new AudioContext();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    function toggleSound() {
+        initAudio();
+        soundEnabled = !soundEnabled;
+        document.getElementById('sound-toggle').innerText = soundEnabled ? '🔊' : '🔇';
+    }
+
+    // Synthesize simple sounds
+    function playSound(type) {
+        if (!soundEnabled || !audioCtx) return;
+        
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+
+        if (type === 'correct') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(440, now); // A4
+            osc.frequency.exponentialRampToValueAtTime(880, now + 0.1); // A5
+            gainNode.gain.setValueAtTime(0, now);
+            gainNode.gain.linearRampToValueAtTime(0.3, now + 0.05);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+        } else if (type === 'wrong') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(200, now);
+            osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+            gainNode.gain.setValueAtTime(0.3, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+        } else if (type === 'leaf') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+            gainNode.gain.setValueAtTime(0, now);
+            gainNode.gain.linearRampToValueAtTime(0.2, now + 0.02);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now);
+            osc.stop(now + 0.1);
+        } else if (type === 'win') {
+            // Simple arpeggio
+            const freqs = [440, 554.37, 659.25, 880]; // A major
+            freqs.forEach((freq, i) => {
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.type = 'sine';
+                o.frequency.value = freq;
+                o.connect(g);
+                g.connect(audioCtx.destination);
+                const t = now + (i * 0.1);
+                g.gain.setValueAtTime(0, t);
+                g.gain.linearRampToValueAtTime(0.2, t + 0.05);
+                g.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+                o.start(t);
+                o.stop(t + 0.4);
+            });
+        }
+    }
+
+    // --- Game State ---
+    let state = {
+        level: 1,
+        questionIndex: 0,
+        totalQuestions: 10,
+        score: 0,
+        leaves: 0,
+        lives: 3,
+        highScore: localStorage.getItem('autumnMathHighScore') || 0,
+        currentQuestion: null,
+        isAnimating: false
+    };
+
+    // DOM Elements
+    const els = {
+        startScreen: document.getElementById('screen-start'),
+        gameScreen: document.getElementById('screen-game'),
+        gameOverScreen: document.getElementById('screen-gameover'),
+        finalScreen: document.getElementById('screen-final'),
+        hud: document.getElementById('hud'),
+        leafCount: document.getElementById('leaf-count'),
+        scoreCount: document.getElementById('score-count'),
+        progress: document.getElementById('task-progress'),
+        heartsContainer: document.getElementById('hearts-container'),
+        question: document.getElementById('question'),
+        visualArea: document.getElementById('visual-area'),
+        options: document.getElementById('options'),
+        instruction: document.getElementById('instruction'),
+        popup: document.getElementById('feedback-popup'),
+        popupIcon: document.getElementById('feedback-icon'),
+        popupText: document.getElementById('feedback-text'),
+        banner: document.getElementById('level-banner'),
+        bannerTitle: document.getElementById('level-title'),
+        bannerDesc: document.getElementById('level-desc'),
+        highScore: document.getElementById('high-score'),
+        particles: document.getElementById('particles')
+    };
+
+    els.highScore.innerText = state.highScore;
+
+    // --- Utility Functions ---
+    function getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+    
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function switchScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => {
+            s.classList.remove('active');
+            s.classList.add('hidden');
+        });
+        document.getElementById(screenId).classList.remove('hidden');
+        // Small delay to allow display block to render before animation
+        setTimeout(() => {
+            document.getElementById(screenId).classList.add('active');
+        }, 50);
+    }
+
+    // --- STREAMING_CHUNK:Question Generation Logic... ---
+    // Task Types: 1:Add, 2:Sub, 3:Composition, 4:Missing, 5:Forward, 6:Backward, 7:Order, 8:Count, 9:Visual Sub, 10:Mixed
+    
+    function generateOptions(correctAnswer, max = 10) {
+        let options = new Set([correctAnswer]);
+        while(options.size < 4) {
+            let num = getRandomInt(0, max);
+            // Ensure options are relatively close
+            if (Math.abs(num - correctAnswer) <= 4 && num !== correctAnswer) {
+                options.add(num);
+            }
+        }
+        return shuffleArray(Array.from(options));
+    }
+
+    function createQuestionGenerator() {
+        const qNum = state.questionIndex + 1;
+        let q = { type: 1, text: '', instruction: '', options: [], correct: null, visual: null };
+
+        // Determine Level based on question number
+        if (qNum <= 3) state.level = 1;
+        else if (qNum <= 7) state.level = 2;
+        else state.level = 3;
+
+        // Determine Task Type based on logic required
+        let taskType;
+        if (qNum === 1) taskType = 8; // Counting
+        else if (qNum === 2) taskType = 1; // Add
+        else if (qNum === 3) taskType = 5; // Forward Count
+        else if (qNum === 4) taskType = 2; // Sub
+        else if (qNum === 5) taskType = 9; // Visual Sub
+        else if (qNum === 6) taskType = 3; // Composition
+        else if (qNum === 7) taskType = 4; // Missing
+        else if (qNum === 8) taskType = 6; // Backward
+        else if (qNum === 9) taskType = 7; // Order
+        else taskType = 10; // Mixed
+
+        if (taskType === 10) {
+            taskType = [1, 2, 3, 4][getRandomInt(0, 3)]; // Pick a random standard math type for final
+        }
+
+        switch (taskType) {
+            case 1: // Addition
+                let a1 = getRandomInt(1, 9);
+                let b1 = getRandomInt(1, 10 - a1);
+                q.correct = a1 + b1;
+                q.text = `${a1} + ${b1} = ?`;
+                q.instruction = "Қосындыны тап:";
+                q.options = generateOptions(q.correct, 10);
+                break;
+            case 2: // Subtraction
+                let a2 = getRandomInt(1, 10);
+                let b2 = getRandomInt(1, a2);
+                q.correct = a2 - b2;
+                q.text = `${a2} − ${b2} = ?`;
+                q.instruction = "Айырманы тап:";
+                q.options = generateOptions(q.correct, 10);
+                break;
+            case 3: // Composition
+                let target = getRandomInt(5, 10);
+                q.instruction = `${target} санын құрастыр:`;
+                q.text = `○ + ○ = ${target}`;
+                
+                let p1 = getRandomInt(1, target - 1);
+                let p2 = target - p1;
+                q.correct = `${p1} + ${p2}`;
+                
+                let wrongOptions = new Set();
+                while(wrongOptions.size < 3) {
+                    let w1 = getRandomInt(1, 9);
+                    let w2 = getRandomInt(1, 9);
+                    if (w1 + w2 !== target) wrongOptions.add(`${w1} + ${w2}`);
+                }
+                q.options = shuffleArray([q.correct, ...Array.from(wrongOptions)]);
+                break;
+            case 4: // Missing number
+                let total = getRandomInt(5, 10);
+                let part = getRandomInt(1, total - 1);
+                q.correct = total - part;
+                let isFirstMissing = Math.random() > 0.5;
+                if(isFirstMissing) q.text = `? + ${part} = ${total}`;
+                else q.text = `${part} + ? = ${total}`;
+                q.instruction = "Жоғалған санды тап:";
+                q.options = generateOptions(q.correct, 10);
+                break;
+            case 5: // Forward counting
+                let startF = getRandomInt(1, 5);
+                q.correct = startF + 2;
+                q.text = `${startF} → ${startF+1} → ? → ${startF+3}`;
+                q.instruction = "Тура санау, қай сан жетіспейді?";
+                q.options = generateOptions(q.correct, 10);
+                break;
+            case 6: // Backward counting
+                let startB = getRandomInt(6, 10);
+                q.correct = startB - 2;
+                q.text = `${startB} → ${startB-1} → ? → ${startB-3}`;
+                q.instruction = "Кері санау, қай сан жетіспейді?";
+                q.options = generateOptions(q.correct, 10);
+                break;
+            case 7: // Ordering (simplified to identifying the correct order)
+                let nums = shuffleArray([2, 4, 6, 8]);
+                q.instruction = "Сандарды өсу ретімен орналастыр:";
+                q.text = nums.join("  ");
+                q.correct = "2 → 4 → 6 → 8";
+                q.options = shuffleArray([
+                    "2 → 4 → 6 → 8",
+                    "8 → 6 → 4 → 2",
+                    "2 → 6 → 4 → 8",
+                    "4 → 2 → 8 → 6"
+                ]);
+                break;
+            case 8: // Counting leaves
+                let count1 = getRandomInt(2, 5);
+                let count2 = getRandomInt(1, 10 - count1);
+                q.correct = count1 + count2;
+                q.instruction = "Барлығы неше жапырақ?";
+                q.text = ""; // Visual instead
+                q.visual = { type: 'add', c1: count1, c2: count2 };
+                q.options = generateOptions(q.correct, 10);
+                break;
+            case 9: // Visual subtraction
+                let totalL = getRandomInt(5, 10);
+                let dropL = getRandomInt(1, totalL - 1);
+                q.correct = totalL - dropL;
+                q.instruction = `${totalL} жапырақтың ${dropL}-уі себетке түсті. Нешеуі қалды?`;
+                q.text = "";
+                q.visual = { type: 'sub', total: totalL, drop: dropL };
+                q.options = generateOptions(q.correct, 10);
+                break;
+        }
+        return q;
+    }
+
+    // --- STREAMING_CHUNK:Rendering & UI Updates... ---
+    
+    function updateHUD() {
+        els.leafCount.innerText = state.leaves;
+        els.scoreCount.innerText = state.score;
+        els.progress.innerText = `${state.questionIndex + 1}/${state.totalQuestions}`;
+        
+        els.heartsContainer.innerHTML = '';
+        for(let i = 0; i < 3; i++) {
+            const heart = document.createElement('div');
+            heart.className = `heart ${i >= state.lives ? 'empty' : 'anim-bounce'}`;
+            // Stagger animation slightly
+            if(i < state.lives) heart.style.animationDelay = `${i * 0.1}s`;
+            els.heartsContainer.appendChild(heart);
+        }
+    }
+
+    function renderVisuals(visualData) {
+        els.visualArea.innerHTML = '';
+        if (!visualData) return;
+
+        if (visualData.type === 'add') {
+            const grp1 = document.createElement('div');
+            grp1.innerHTML = '🍁'.repeat(visualData.c1);
+            grp1.className = 'visual-item text-red-500';
+            
+            const plus = document.createElement('div');
+            plus.innerText = '+';
+            plus.className = 'visual-item';
+            
+            const grp2 = document.createElement('div');
+            grp2.innerHTML = '🍂'.repeat(visualData.c2);
+            grp2.className = 'visual-item text-orange-500';
+
+            els.visualArea.append(grp1, plus, grp2);
+        } else if (visualData.type === 'sub') {
+            const container = document.createElement('div');
+            container.style.display = 'flex';
+            container.style.gap = '10px';
+            container.style.alignItems = 'center';
+
+            const remaining = document.createElement('div');
+            remaining.innerHTML = '🍁'.repeat(visualData.total - visualData.drop);
+            remaining.className = 'visual-item text-red-500';
+
+            const basketArea = document.createElement('div');
+            basketArea.className = 'visual-basket';
+            
+            // Add leaves in basket
+            for(let i=0; i<visualData.drop; i++) {
+                const l = document.createElement('span');
+                l.innerText = '🍁';
+                l.className = 'basket-leaf';
+                l.style.left = `${Math.random() * 60 + 10}px`;
+                l.style.bottom = `${Math.random() * 20}px`;
+                l.style.transform = `rotate(${Math.random() * 90 - 45}deg)`;
+                basketArea.appendChild(l);
+            }
+
+            container.append(remaining, basketArea);
+            els.visualArea.appendChild(container);
+        }
+    }
+
+    function showLevelBanner(levelNum) {
+        return new Promise(resolve => {
+            let title, desc;
+            if (levelNum === 1) { title = "1-деңгей: Күзгі бақ"; desc = "Қосу және санау"; }
+            else if (levelNum === 2) { title = "2-деңгей: Алтын орман"; desc = "Азайту және сан құрамы"; }
+            else { title = "3-деңгей: Күзгі шың"; desc = "Аралас тапсырмалар"; }
+            
+            els.bannerTitle.innerText = title;
+            els.bannerDesc.innerText = desc;
+            
+            els.banner.classList.add('show');
+            setTimeout(() => {
+                els.banner.classList.remove('show');
+                setTimeout(resolve, 500); // Wait for transition
+            }, 2500);
+        });
+    }
+
+    async function showQuestion() {
+        if (state.questionIndex === 0 || (state.questionIndex === 3) || (state.questionIndex === 7)) {
+             await showLevelBanner(state.level);
+        }
+
+        state.currentQuestion = createQuestionGenerator();
+        updateHUD();
+
+        els.instruction.innerText = state.currentQuestion.instruction;
+        els.question.innerText = state.currentQuestion.text;
+        
+        renderVisuals(state.currentQuestion.visual);
+
+        els.options.innerHTML = '';
+        state.currentQuestion.options.forEach((opt, index) => {
+            const btn = document.createElement('button');
+            // Check if option is a long string (like equations) or a single number
+            btn.className = `btn btn-number ${typeof opt === 'string' && opt.length > 2 ? 'w-auto px-6 rounded-3xl' : ''}`;
+            btn.innerText = opt;
+            // Delay entrance animation
+            btn.style.animation = `bounceIn 0.4s ease ${index * 0.1}s backwards`;
+            btn.onclick = () => handleAnswer(opt, btn);
+            els.options.appendChild(btn);
+        });
+
+        // Add ambient falling leaves in background
+        createFallingLeaves(2);
+    }
+
+    // --- STREAMING_CHUNK:Interaction Logic... ---
+
+    function showPopup(isCorrect) {
+        els.popup.className = isCorrect ? 'correct show' : 'wrong show';
+        els.popupIcon.innerText = isCorrect ? '✓' : '✕';
+        els.popupText.innerText = isCorrect ? 'Жарайсың!' : 'Қайта байқап көр!';
+        
+        setTimeout(() => {
+            els.popup.classList.remove('show');
+        }, 1500);
+    }
+
+    function createParticle(x, y, icon) {
+        const p = document.createElement('div');
+        p.innerText = icon;
+        p.style.position = 'absolute';
+        p.style.left = `${x}px`;
+        p.style.top = `${y}px`;
+        p.style.fontSize = '2rem';
+        p.style.zIndex = '90';
+        p.style.transition = 'transform 1s cubic-bezier(0.25, 1, 0.5, 1), opacity 1s';
+        els.particles.appendChild(p);
+
+        // Target: Leaf HUD icon (approximate position)
+        const hudRect = els.leafCount.getBoundingClientRect();
+        
+        setTimeout(() => {
+            const dx = hudRect.left - x;
+            const dy = hudRect.top - y;
+            p.style.setProperty('--tx', `${dx}px`);
+            p.style.setProperty('--ty', `${dy}px`);
+            p.style.animation = 'flyToBasket 1s forwards';
+        }, 50);
+
+        setTimeout(() => p.remove(), 1050);
+    }
+
+    function handleAnswer(selectedOpt, btnEl) {
+        if (state.isAnimating) return;
+        state.isAnimating = true;
+
+        const isCorrect = selectedOpt === state.currentQuestion.correct;
+
+        if (isCorrect) {
+            btnEl.classList.add('correct');
+            playSound('correct');
+            showPopup(true);
+            fireConfetti();
+            
+            // Visual leaf collection from button
+            const rect = btnEl.getBoundingClientRect();
+            createParticle(rect.left + rect.width/2, rect.top, '🍁');
+            
+            setTimeout(() => playSound('leaf'), 500);
+
+            state.score += 10;
+            state.leaves += 1;
+            updateHUD();
+
+            setTimeout(() => {
+                state.questionIndex++;
+                state.isAnimating = false;
+                if (state.questionIndex >= state.totalQuestions) {
+                    endGame(true);
+                } else {
+                    showQuestion();
+                }
+            }, 1800);
+
+        } else {
+            btnEl.classList.add('wrong');
+            btnEl.classList.add('anim-shake');
+            playSound('wrong');
+            showPopup(false);
+            
+            state.lives--;
+            updateHUD();
+
+            setTimeout(() => {
+                btnEl.classList.remove('anim-shake');
+                state.isAnimating = false;
+                if (state.lives <= 0) {
+                    endGame(false);
+                }
+            }, 1500);
+        }
+    }
+
+    // --- STREAMING_CHUNK:Game Flow Control... ---
+
+    function startGame() {
+        initAudio();
+        state.level = 1;
+        state.questionIndex = 0;
+        state.score = 0;
+        state.leaves = 0;
+        state.lives = 3;
+        state.isAnimating = false;
+
+        els.hud.style.display = 'flex';
+        switchScreen('screen-game');
+        showQuestion();
+    }
+
+    function resetToStart() {
+        els.hud.style.display = 'none';
+        switchScreen('screen-start');
+    }
+
+    function endGame(isWin) {
+        els.hud.style.display = 'none';
+        els.particles.innerHTML = ''; // clear floating leaves
+
+        if (isWin) {
+            playSound('win');
+            document.getElementById('final-score').innerText = state.score;
+            document.getElementById('final-leaves').innerText = state.leaves;
+            
+            if (state.score > state.highScore) {
+                state.highScore = state.score;
+                localStorage.setItem('autumnMathHighScore', state.highScore);
+                els.highScore.innerText = state.highScore;
+            }
+            
+            switchScreen('screen-final');
+            
+            // Continuous confetti for win screen
+            let cInt = setInterval(fireConfetti, 1000);
+            setTimeout(() => clearInterval(cInt), 5000);
+
+        } else {
+            switchScreen('screen-gameover');
+        }
+    }
+
+    // --- STREAMING_CHUNK:Effects & Eye Candy... ---
+
+    // Simple Confetti Implementation
+    const canvas = document.getElementById('confetti');
+    const ctx = canvas.getContext('2d');
+    let confettis = [];
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function fireConfetti() {
+        const colors = ['#f97316', '#eab308', '#dc2626', '#16a34a'];
+        for (let i = 0; i < 50; i++) {
+            confettis.push({
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                r: Math.random() * 6 + 4,
+                dx: Math.random() * 20 - 10,
+                dy: Math.random() * -15 - 5,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                tilt: Math.floor(Math.random() * 10) - 10,
+                tiltAngleIncrement: (Math.random() * 0.07) + 0.05,
+                tiltAngle: 0
+            });
+        }
+    }
+
+    function animateConfetti() {
+        requestAnimationFrame(animateConfetti);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        confettis.forEach((c, index) => {
+            c.tiltAngle += c.tiltAngleIncrement;
+            c.y += (Math.cos(c.tiltAngle) + 1 + c.r / 2) / 2;
+            c.x += Math.sin(c.tiltAngle) * 2;
+            c.dy += 0.2; // gravity
+            c.y += c.dy;
+
+            ctx.beginPath();
+            ctx.lineWidth = c.r;
+            ctx.strokeStyle = c.color;
+            ctx.moveTo(c.x + c.tilt + c.r, c.y);
+            ctx.lineTo(c.x + c.tilt, c.y + c.tilt + c.r);
+            ctx.stroke();
+
+            if (c.y > canvas.height) confettis.splice(index, 1);
+        });
+    }
+    animateConfetti();
+
+    // Ambient Falling Leaves
+    function createFallingLeaves(count) {
+        const leafTypes = ['🍂', '🍁'];
+        for(let i=0; i<count; i++) {
+            const el = document.createElement('div');
+            el.innerText = leafTypes[Math.floor(Math.random()*leafTypes.length)];
+            el.style.position = 'absolute';
+            el.style.left = `${Math.random() * 100}vw`;
+            el.style.top = `-50px`;
+            el.style.fontSize = `${Math.random() * 1.5 + 1}rem`;
+            el.style.opacity = '0.6';
+            el.style.zIndex = '5';
+            el.style.pointerEvents = 'none';
+            
+            const duration = Math.random() * 5 + 5; // 5-10s
+            el.style.animation = `fall ${duration}s linear forwards`;
+            
+            els.particles.appendChild(el);
+            
+            // Clean up
+            setTimeout(() => {
+                if(el.parentNode) el.parentNode.removeChild(el);
+            }, duration * 1000);
+        }
+    }
+
+    // Start background leaves loop
+    setInterval(() => {
+        if(!els.gameScreen.classList.contains('hidden')) {
+            createFallingLeaves(1);
+        }
+    }, 2000);
+
+    // Initial background Setup
+    document.addEventListener('DOMContentLoaded', () => {
+        // Create initial floating leaves on start screen
+        const startScreenBg = document.querySelector('.start-screen .screen-overlay');
+        for(let i=0; i<5; i++) {
+            const l = document.createElement('div');
+            l.innerText = ['🍂', '🍁'][Math.random()>0.5?1:0];
+            l.style.position = 'absolute';
+            l.style.left = `${Math.random()*100}%`;
+            l.style.top = `${Math.random()*100}%`;
+            l.style.fontSize = '2rem';
+            l.style.opacity = '0.3';
+            l.className = 'anim-float';
+            l.style.animationDelay = `${Math.random()*2}s`;
+            startScreenBg.appendChild(l);
+        }
+    });
+
+</script>
+</body>
+</html>
