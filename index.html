@@ -139,7 +139,10 @@ const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=rnd(0,i);[a[i],a[j]]=[a[
 
 /* ===== Деңгейлер мен тапсырмалар жоспары (барлығы 10) ===== */
 const LV=[{n:'Күзгі бақ',i:'🍂'},{n:'Алтын орман',i:'🍁'},{n:'Күзгі шың',i:'🍃'}];
-const PLAN=[[0,'add'],[0,'count'],[0,'add'],[1,'sub'],[1,'vsub'],[1,'comp'],[2,'missing'],[2,'fwd'],[2,'back'],[2,'order']].map(([lv,t])=>({lv,t}));
+/* Тіркелген тапсырмалар: әр ойында бірдей. [деңгей, түрі, a, b] */
+const PLAN=[[0,'add',2,1],[0,'count',2,2],[0,'add',3,2],
+ [1,'sub',4,1],[1,'vsub',5,2],[1,'sub',6,3],
+ [2,'add',4,3],[2,'sub',8,3],[2,'vsub',7,3],[2,'add',6,4]].map(([lv,t,a,b])=>({lv,t,a,b}));
 const state={qi:0,lives:3,score:0,leaves:0,hero:'boy',locked:true,gen:0,cur:null,oi:0,shown:0};
 let hi=0;try{hi=+localStorage.getItem('kuz_hi')||0}catch(e){}
 
@@ -167,29 +170,19 @@ function confetti(n=40){const c=['#f08a24','#e5483b','#ffd23f','#58b934','#4cb3f
 function feedback(ok){const f=$('#fb');f.innerHTML=ok?`<img src="${IMG.board4}">`:`<img src="${IMG.bad}"><div class="fbt">Қайта байқап көр!</div>`;f.classList.remove('show');void f.offsetWidth;f.classList.add('show')}
 
 /* ===== Тапсырма генерациясы (барлығы ≤ 10) ===== */
-function numOpts(c){const near=[...Array(11).keys()].filter(x=>x!==c).sort((a,b)=>Math.abs(a-c)-Math.abs(b-c)+(Math.random()-.5)*3).slice(0,3);
+function numOpts(c){const near=[...Array(11).keys()].filter(x=>x!==c).sort((a,b)=>Math.abs(a-c)-Math.abs(b-c)||a-b).slice(0,3);
   return [c,...near].sort((a,b)=>a-b).map(v=>({l:String(v),ok:v===c}))}
 const leaves=(n,e)=>`<div class="grp">${Array.from({length:n},()=>`<span class="lf">${e}</span>`).join('')}</div>`;
-function generateQuestion(t){
-  const q={t,kind:'choice',hint:'Дұрыс жауапты таңда!',vis:''};
-  if(t==='add'){const a=rnd(1,6),b=rnd(1,Math.min(6,10-a));q.text=`🍁 ${a} + ${b} = ?`;q.opts=numOpts(a+b)}
-  else if(t==='sub'){const a=rnd(4,10),b=rnd(1,a-1);q.text=`🍂 ${a} − ${b} = ?`;q.opts=numOpts(a-b)}
-  else if(t==='count'){const a=rnd(1,5),b=rnd(1,Math.min(5,10-a));q.hint='Жапырақтарды санап көр!';q.text='Барлығы неше жапырақ?';
+function generateQuestion(p){
+  const {t,a,b}=p,q={t,kind:'choice',hint:'Дұрыс жауапты таңда!',vis:''};
+  if(t==='add'){q.text=`🍁 ${a} + ${b} = ?`;q.opts=numOpts(a+b)}
+  else if(t==='sub'){q.text=`🍂 ${a} − ${b} = ?`;q.opts=numOpts(a-b)}
+  else if(t==='count'){q.hint='Жапырақтарды санап көр!';q.text='Барлығы неше жапырақ?';
     q.vis=`${leaves(a,'🍁')}<span class="t">+</span>${leaves(b,'🍂')}`;q.opts=numOpts(a+b)}
-  else if(t==='vsub'){const a=rnd(5,8),b=rnd(1,Math.min(a-1,4));q.hint=`${a} жапырақтың ${b}-еуі себетке түсті`;q.text='Неше жапырақ қалды?';
+  else if(t==='vsub'){q.hint=`${a} жапырақтың ${b}-еуі себетке түсті`;q.text='Неше жапырақ қалды?';
     q.vis=`<div class="grp" id="vsG">${Array.from({length:a},(_,i)=>`<span class="lf${i>=a-b?' out':''}">🍁</span>`).join('')}</div><img class="b" id="vsB" src="${IMG.bEmpty}">`;
     q.opts=numOpts(a-b);q.after=()=>{const bk=$('#vsB');if(!bk)return;const r=bk.getBoundingClientRect();document.querySelectorAll('#qVis .out').forEach((e,i)=>{const er=e.getBoundingClientRect();
       e.style.animation='none';e.style.transition=`transform .8s ${i*.18}s,opacity .4s ${.8+i*.18}s`;e.style.transform=`translate(${r.left+r.width/2-er.left-er.width/2}px,${r.top+r.height/3-er.top}px) scale(.5)`;e.style.opacity=0})}}
-  else if(t==='comp'){const n=rnd(4,10),x=rnd(1,n-1),ok=`${x} + ${n-x}`,set=new Set([ok]);const wr=[];
-    while(wr.length<3){const p=rnd(1,9),r=rnd(1,9),l=`${p} + ${r}`;if(p+r!==n&&p+r<=10&&!set.has(l)){set.add(l);wr.push(l)}}
-    q.hint=`${n} санының құрамын тап!`;q.text=`<span class="circ"></span> + <span class="circ"></span> = ${n}`;q.wide=true;
-    q.opts=shuffle([ok,...wr]).map(l=>({l,ok:l===ok}))}
-  else if(t==='missing'){const n=rnd(5,10),a=rnd(1,n-1);q.text=`${n} = ${a} + ❓`;q.opts=numOpts(n-a)}
-  else if(t==='fwd'||t==='back'){const up=t==='fwd',s=up?rnd(1,6):rnd(6,10),seq=Array.from({length:5},(_,i)=>up?s+i:s-i),k=rnd(1,3);
-    q.hint=up?'Тура санап көр! ➡️':'Кері санап көр! ⬅️';q.text=seq.map((v,i)=>i===k?'❓':v).join(' → ');q.opts=numOpts(seq[k])}
-  else if(t==='order'){const asc=Math.random()<.65;q.kind='order';q.nums=shuffle([...Array(10).keys()].map(x=>x+1)).slice(0,5);
-    q.sorted=[...q.nums].sort((a,b)=>asc?a-b:b-a);q.hint=asc?'Кішіден үлкенге қарай ретімен бас!':'Үлкеннен кішіге қарай ретімен бас!';
-    q.text=asc?'1 → 3 → 5 → …':'9 → 7 → 5 → …';q.vis=`<div class="slots">${q.nums.map(()=>'<div class="slot">?</div>').join('')}</div>`}
   return q}
 
 /* ===== Көрсету ===== */
@@ -209,7 +202,7 @@ function showQuestion(q){state.cur=q;state.locked=false;state.oi=0;
         else checkAnswer(b,false)};a.appendChild(b)})}
   else q.opts.forEach(o=>{const b=document.createElement('button');b.className='opt';b.innerHTML=o.l;b.onclick=()=>checkAnswer(b,o.ok);a.appendChild(b)});
   updateHUD();if(q.after)later(q.after,600)}
-function loadQuestion(){show('game');showQuestion(generateQuestion(PLAN[state.qi].t))}
+function loadQuestion(){show('game');showQuestion(generateQuestion(PLAN[state.qi]))}
 
 /* ===== Жауап тексеру ===== */
 function checkAnswer(btn,ok){if(state.locked)return;ok?handleCorrectAnswer(btn):handleWrongAnswer(btn)}
